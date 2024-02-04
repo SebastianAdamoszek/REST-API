@@ -1,4 +1,4 @@
-## GoIT Node.js Course Template Homework
+<!-- ## GoIT Node.js Course Template Homework
 
 Realizează un fork al acestui repozitoriu pentru a îndeplini temele de acasă (2-6). Fork-ul va crea un repozitoriu pe contul tău de pe http://github.com
 
@@ -26,4 +26,4 @@ Citește cu atenție comentariile mentorului. Corectează observațiile și fă 
 - `npm start` &mdash; pornește serverul în modul production.
 - `npm run start:dev` &mdash; pornește serverul în modul dezvoltare (development).
 - `npm run lint` &mdash; rulează verificarea codului cu ESLint, este necesar să se ruleze înaintea fiecărui PR și să se corecteze toate erorile linterului.
-- `npm lint:fix` &mdash; aceeași verificare a linterului, dar cu corecții automate pentru erorile simple.
+- `npm lint:fix` &mdash; aceeași verificare a linterului, dar cu corecții automate pentru erorile simple. -->
