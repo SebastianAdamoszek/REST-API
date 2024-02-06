@@ -1,8 +1,11 @@
 const fs = require("fs/promises");
 
+// Stała dla ścieżki do pliku bazy danych
+const dbFile = "./models/contacts.json";
+
 const listContacts = async () => {
   try {
-    const contactsData = await fs.readFile("./models/contacts.json", "utf-8");
+    const contactsData = await fs.readFile(dbFile, "utf-8");
     return JSON.parse(contactsData);
   } catch (error) {
     console.error("Error reading contacts file:", error.message);
@@ -56,7 +59,7 @@ const updateContact = async (contactId, body) => {
 const writeContactsToFile = async (data) => {
   try {
     await fs.writeFile(
-      "./models/contacts.json",
+      dbFile,
       JSON.stringify(data, null, 2),
       "utf-8"
     );
