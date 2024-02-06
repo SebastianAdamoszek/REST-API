@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const contactsModel = require("../../models/contacts");
+const contactValidation = require("../../validation/contactValidation");
 
 // GET /api/contacts
 router.get("/", async (req, res, next) => {
@@ -23,33 +24,63 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-const { v4: uuidv4 } = require("uuid");
+// PUT /api/contacts/:id
+router.put("/:id", async (req, res) => {
+  const { name, email, phone } = req.body;
+  const contactId = req.params.id;
 
-function generateUniqueId() {
+  // Validation
+  const { error } = contactValidation.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
+  const updatedContact = {
+    name,
+    email,
+    phone,
+  };
+
+  try {
+    const result = await contactsModel.updateContact(contactId, updatedContact);
+    if (!result) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+
+// Generate random Id
+const { v4: uuidv4 } = require('uuid');
+
+function generateRandomId() {
   return uuidv4().replace(/-/g, "").substr(0, 21);
 }
 
 // POST /api/contacts
-router.post("/", async (req, res, next) => {
+router.post("/", async (req, res) => {
+  const { name, email, phone } = req.body;
+
+  // Validation
+  const { error } = contactValidation.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
+  }
+
+  const newContact = {
+    id: generateRandomId(),
+    name,
+    email,
+    phone,
+  };
+
   try {
-    const { name, email, phone } = req.body;
-    if (!name || !email || !phone) {
-      return res
-        .status(400)
-        .json({ message: "missing required name, email, or phone field" });
-    }
-
-    const newContact = {
-      id: generateUniqueId(),
-      name,
-      email,
-      phone,
-    };
-
     await contactsModel.addContact(newContact);
     res.status(201).json(newContact);
   } catch (error) {
-    next(error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -60,28 +91,6 @@ router.delete("/:id", async (req, res) => {
     return res.status(404).json({ message: "Not found" });
   }
   res.json({ message: "contact deleted" });
-});
-
-// PUT /api/contacts/:id
-router.put("/:id", async (req, res, next) => {
-  try {
-    const contactId = req.params.id;
-    const body = req.body;
-
-    if (!body) {
-      return res.status(400).json({ message: "missing fields" });
-    }
-
-    const updatedContact = await contactsModel.updateContact(contactId, body);
-    console.log("Updated contact:", updatedContact);
-
-    if (!updatedContact) {
-      return res.status(404).json({ message: "Not found" });
-    }
-    res.status(200).json(updatedContact);
-  } catch (error) {
-    next(error);
-  }
 });
 
 module.exports = router;
