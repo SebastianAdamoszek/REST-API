@@ -2,3 +2,5 @@ node_modules/
 .env
 .idea
 .vscode
+# pliku contacts.json jest nieuzyteczny od zadania 3-mongod
+contacts.json
