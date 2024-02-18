@@ -1,6 +1,6 @@
 const Joi = require("joi");
 
-const joiSchema = Joi.object({
+const userSchema = Joi.object({
   name: Joi.string()
     .min(3)
     .max(30)
@@ -8,8 +8,7 @@ const joiSchema = Joi.object({
     .messages({
       "string.min": "Name must contain at least 3 letters",
       "string.max": "Name can contain no more than 30 letters",
-      "string.pattern.base":
-        "The name can consist of letters and spaces",
+      "string.pattern.base": "The name can consist of letters and spaces",
     }),
   email: Joi.string().email().messages({
     "string.email": "Invalid email format",
@@ -19,6 +18,9 @@ const joiSchema = Joi.object({
     .messages({
       "string.pattern.base": "Invalid format. Example XXX-XXX-XXX",
     }),
+  favorite: Joi.boolean().messages({
+    "boolean.base": "Favorite must be a boolean value (true/false)",
+  }),
 });
 
-module.exports = joiSchema;
+module.exports = userSchema;

@@ -1,16 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
 const contactValidation = require("../../validation/joi");
 const contactsModel = require("../../models/contacts");
+const Contacts = require("../../mongodb/contactsSchema");
 
 // GET /api/contacts
-router.get("/", async (res, next) => {
+router.get("/", async (req, res) => {
   try {
     const contacts = await contactsModel.listContacts();
     res.status(200).json(contacts);
   } catch (error) {
-    next(error);
+    console.error("Error:", error);
+    if (error.message === "Db_err_connection") {
+      return res.status(500).json({ message: "Database connection error" });
+    } else {
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
   }
 });
 
@@ -18,7 +23,6 @@ router.get("/", async (res, next) => {
 router.get("/:contactId", async (req, res, next) => {
   try {
     const contact = await contactsModel.getContactById(req.params.contactId);
-    console.log(req.params.contactId);
     if (!contact) return res.status(404).json({ message: "Not found" });
     res.status(200).json(contact);
   } catch (error) {
@@ -82,56 +86,37 @@ router.post("/", async (req, res) => {
 
 // DELETE /api/contacts/:contactId
 router.delete("/:contactId", async (req, res) => {
-  const deletedContact = await contactsModel.removeContact(
-    req.params.contactId
-  );
-  if (!deletedContact) {
-    return res.status(404).json({ message: "Not found" });
-  }
-  res.json({ message: "contact deleted" });
-});
-
-// Funkcja aktualizująca status kontaktu w bazie danych
-async function updateStatusContact(contactId, favorite) {
   try {
-    console.log("Updating contact with ID:", contactId);
-    console.log("New favorite value:", favorite);
-    const updatedContact = await mongoose
-      .model("Contact")
-      .findByIdAndUpdate(contactId, { favorite: favorite }, { new: true });
-    console.log("Updated contact:", updatedContact);
-    return updatedContact;
+    const deletedContact = await contactsModel.removeContact(req.params.contactId);
+    if (!deletedContact) {
+      return res.status(404).json({ message: "Not found" });
+    }
+    res.json({ message: "Contact deleted" });
   } catch (error) {
-    console.error("Error updating contact:", error.message);
-    return null;
+    res.status(500).json({ message: "Internal Server Error" });
   }
-}
-
-
+});
 
 // PATCH /api/contacts/:contactId/favorite
 router.patch("/:contactId/favorite", async (req, res) => {
   const contactId = req.params.contactId;
   const { favorite } = req.body;
 
-  console.log("Received body:", req.body);
-
   try {
-    // Sprawdzenie, czy body zawiera wymagane pole favorite
-    if (typeof favorite === 'undefined') {
-      return res.status(400).json({ message: "missing field favorite" });
+    // Validation
+    if (typeof favorite !== "boolean") {
+      return res.status(400).json({ message: "Favorite field must be a boolean" });
     }
 
-    // Wywołanie funkcji updateStatusContact z aktualizacją pola favorite
-    const updatedContact = await updateStatusContact(contactId, favorite);
+    // Update contact's favorite field
+    const updatedContact = await Contacts.findByIdAndUpdate(contactId, { favorite }, { new: true });
 
-    // Obsługa przypadku, gdy kontakt został zaktualizowany
-    if (updatedContact) {
-      return res.status(200).json(updatedContact);
-    } else {
-      // Obsługa przypadku, gdy kontakt nie został znaleziony
-      return res.status(404).json({ message: "Not found" });
+    // Check if contact was updated
+    if (!updatedContact) {
+      return res.status(404).json({ message: "Contact not found" });
     }
+
+    res.status(200).json(updatedContact);
   } catch (error) {
     console.error("Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
