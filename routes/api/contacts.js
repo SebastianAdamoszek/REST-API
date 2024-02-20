@@ -1,22 +1,28 @@
 const express = require("express");
 const router = express.Router();
-const contactsModel = require("../../models/contacts");
 const contactValidation = require("../../validation/joi");
+const contactsModel = require("../../models/contacts");
+const Contacts = require("../../mongodb/contactsSchema");
 
 // GET /api/contacts
-router.get("/", async (req, res, next) => {
+router.get("/", async (req, res) => {
   try {
     const contacts = await contactsModel.listContacts();
     res.status(200).json(contacts);
   } catch (error) {
-    next(error);
+    console.error("Error:", error);
+    if (error.message === "Db_err_connection") {
+      return res.status(500).json({ message: "Database connection error" });
+    } else {
+      return res.status(500).json({ message: "Internal Server Error" });
+    }
   }
 });
 
-// GET /api/contacts/:id
-router.get("/:id", async (req, res, next) => {
+// GET /api/contacts/:contactId
+router.get("/:contactId", async (req, res, next) => {
   try {
-    const contact = await contactsModel.getContactById(req.params.id);
+    const contact = await contactsModel.getContactById(req.params.contactId);
     if (!contact) return res.status(404).json({ message: "Not found" });
     res.status(200).json(contact);
   } catch (error) {
@@ -24,10 +30,10 @@ router.get("/:id", async (req, res, next) => {
   }
 });
 
-// PUT /api/contacts/:id
-router.put("/:id", async (req, res) => {
-  const { name, email, phone } = req.body;
-  const contactId = req.params.id;
+// PUT /api/contacts/:contactId
+router.put("/:contactId", async (req, res) => {
+  const { name, email, phone, favorite } = req.body;
+  const contactId = req.params.contactId;
 
   // Validation
   const { error } = contactValidation.validate(req.body);
@@ -39,6 +45,7 @@ router.put("/:id", async (req, res) => {
     name,
     email,
     phone,
+    favorite,
   };
 
   try {
@@ -52,16 +59,9 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Generate random Id
-const { v4: uuidv4 } = require('uuid');
-
-function generateRandomId() {
-  return uuidv4().replace(/-/g, "").substr(0, 21);
-}
-
 // POST /api/contacts
 router.post("/", async (req, res) => {
-  const { name, email, phone } = req.body;
+  const { name, email, phone, favorite } = req.body;
 
   // Validation
   const { error } = contactValidation.validate(req.body);
@@ -70,10 +70,10 @@ router.post("/", async (req, res) => {
   }
 
   const newContact = {
-    id: generateRandomId(),
     name,
     email,
     phone,
+    favorite,
   };
 
   try {
@@ -84,13 +84,43 @@ router.post("/", async (req, res) => {
   }
 });
 
-// DELETE /api/contacts/:id
-router.delete("/:id", async (req, res) => {
-  const deletedContact = await contactsModel.removeContact(req.params.id);
-  if (!deletedContact) {
-    return res.status(404).json({ message: "Not found" });
+// DELETE /api/contacts/:contactId
+router.delete("/:contactId", async (req, res) => {
+  try {
+    const deletedContact = await contactsModel.removeContact(req.params.contactId);
+    if (!deletedContact) {
+      return res.status(404).json({ message: "Not found" });
+    }
+    res.json({ message: "Contact deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Internal Server Error" });
   }
-  res.json({ message: "contact deleted" });
+});
+
+// PATCH /api/contacts/:contactId/favorite
+router.patch("/:contactId/favorite", async (req, res) => {
+  const contactId = req.params.contactId;
+  const { favorite } = req.body;
+
+  try {
+    // Validation
+    if (typeof favorite !== "boolean") {
+      return res.status(400).json({ message: "Favorite field must be a boolean" });
+    }
+
+    // Update contact's favorite field
+    const updatedContact = await Contacts.findByIdAndUpdate(contactId, { favorite }, { new: true });
+
+    // Check if contact was updated
+    if (!updatedContact) {
+      return res.status(404).json({ message: "Contact not found" });
+    }
+
+    res.status(200).json(updatedContact);
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 module.exports = router;

@@ -1,70 +1,56 @@
-const fs = require("fs/promises");
-
-// Stała dla ścieżki do pliku bazy danych
-const dbFile = "./models/contacts.json";
+const Contact = require("../mongodb/contactsSchema"); // Importuj model danych z Mongoose
 
 const listContacts = async () => {
   try {
-    const contactsData = await fs.readFile(dbFile, "utf-8");
-    return JSON.parse(contactsData);
+    const contacts = await Contact.find(); // Pobierz wszystkie kontakty z bazy danych MongoDB
+    return contacts; // Zwróć kontakty
   } catch (error) {
-    console.error("Error reading contacts file:", error.message);
-    return [];
+    console.error("Error reading contacts:", error.message);
+    throw new Error("Db_err_connection");
   }
 };
 
 const getContactById = async (contactId) => {
-  const contacts = await listContacts();
-  const foundContact = contacts.find((c) => c.id === contactId);
-  return foundContact;
+  try {
+    const contact = await Contact.findById(contactId); // Pobierz kontakt o podanym ID z bazy danych MongoDB
+    if (!contact) throw new Error("Contact not found");
+    return contact;
+  } catch (error) {
+    console.error("Error reading contact:", error.message);
+    throw new Error("Db_err_reading_contact");
+  }
 };
 
 const removeContact = async (contactId) => {
-  const contacts = await listContacts();
-  const indexToRemove = contacts.findIndex((c) => c.id === contactId);
-
-  if (indexToRemove === -1) {
-    return null;
+  try {
+    const contact = await Contact.findByIdAndDelete(contactId); // Usuń kontakt o podanym ID z bazy danych MongoDB
+    if (!contact) throw new Error("Contact not found");
+    return contact;
+  } catch (error) {
+    console.error("Error deleting contact:", error.message);
+    throw new Error("Db_err_deleting_contact");
   }
-
-  const deletedContact = contacts.splice(indexToRemove, 1)[0];
-  await writeContactsToFile(contacts);
-  return deletedContact;
 };
 
 const addContact = async (body) => {
-  const contacts = await listContacts();
-  const newContact = { id: contacts.length + 1, ...body };
-  contacts.push(newContact);
-  await writeContactsToFile(contacts);
-  return newContact;
+  try {
+    return await Contact.create(body); // Dodaj nowy kontakt do bazy danych MongoDB
+  } catch (error) {
+    console.error("Error creating contact:", error.message);
+    throw new Error("Db_err_creating_contact");
+  }
 };
 
 const updateContact = async (contactId, body) => {
-  const contacts = await listContacts();
-  const existingContact = contacts.find((c) => c.id === contactId);
-
-  if (!existingContact) {
-    return null;
-  }
-
-  const updatedContact = { ...existingContact, ...body };
-  const updatedContacts = contacts.map((c) =>
-    c.id === contactId ? updatedContact : c
-  );
-  await writeContactsToFile(updatedContacts);
-  return updatedContact;
-};
-
-const writeContactsToFile = async (data) => {
   try {
-    await fs.writeFile(
-      dbFile,
-      JSON.stringify(data, null, 2),
-      "utf-8"
-    );
+    const contact = await Contact.findByIdAndUpdate(contactId, body, {
+      new: true,
+    }); // Zaktualizuj kontakt o podanym ID w bazie danych MongoDB
+    if (!contact) throw new Error("Contact not found");
+    return contact;
   } catch (error) {
-    console.error("Error writing contacts file:", error.message);
+    console.error("Error updating contact:", error.message);
+    throw new Error("Db_err_updating_contact");
   }
 };
 
