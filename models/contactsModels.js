@@ -1,8 +1,8 @@
 const Contact = require("../mongodb/contactsSchema"); // Importuj model danych z Mongoose
 
-const listContacts = async () => {
+const listContacts = async (ownerId) => {
   try {
-    const contacts = await Contact.find(); // Pobierz wszystkie kontakty z bazy danych MongoDB
+    const contacts = await Contact.find({ owner: ownerId }); // Pobierz wszystkie kontakty z bazy danych MongoDB
     return contacts; // Zwróć kontakty
   } catch (error) {
     console.error("Error reading contacts:", error.message);
@@ -10,9 +10,9 @@ const listContacts = async () => {
   }
 };
 
-const getContactById = async (contactId) => {
+const getContactById = async (contactId, ownerId) => {
   try {
-    const contact = await Contact.findById(contactId); // Pobierz kontakt o podanym ID z bazy danych MongoDB
+    const contact = await Contact.findOne({ _id: contactId, owner: ownerId }); // Pobierz kontakt o podanym ID z bazy danych MongoDB
     if (!contact) throw new Error("Contact not found");
     return contact;
   } catch (error) {
@@ -21,9 +21,9 @@ const getContactById = async (contactId) => {
   }
 };
 
-const removeContact = async (contactId) => {
+const removeContact = async (contactId, ownerId) => {
   try {
-    const contact = await Contact.findByIdAndDelete(contactId); // Usuń kontakt o podanym ID z bazy danych MongoDB
+    const contact = await Contact.findByIdAndDelete(contactId);
     if (!contact) throw new Error("Contact not found");
     return contact;
   } catch (error) {
@@ -32,20 +32,28 @@ const removeContact = async (contactId) => {
   }
 };
 
-const addContact = async (body) => {
+
+const addContact = async (body, ownerId) => {
   try {
-    return await Contact.create(body); // Dodaj nowy kontakt do bazy danych MongoDB
+    const contact = await Contact.create({
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      favorite: body.favorite,
+      owner: ownerId,
+    }); // Dodaj nowy kontakt do bazy danych MongoDB
+    return contact;
   } catch (error) {
     console.error("Error creating contact:", error.message);
     throw new Error("Db_err_creating_contact");
   }
 };
 
-const updateContact = async (contactId, body) => {
+const updateContact = async (contactId, body, ownerId) => {
   try {
     const contact = await Contact.findByIdAndUpdate(contactId, body, {
       new: true,
-    }); // Zaktualizuj kontakt o podanym ID w bazie danych MongoDB
+    });
     if (!contact) throw new Error("Contact not found");
     return contact;
   } catch (error) {
@@ -53,6 +61,7 @@ const updateContact = async (contactId, body) => {
     throw new Error("Db_err_updating_contact");
   }
 };
+
 
 module.exports = {
   listContacts,

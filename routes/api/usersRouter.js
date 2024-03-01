@@ -21,13 +21,10 @@ router.post("/signup", async (req, res, next) => {
       return res.status(409).json({ message: "Email already in use" });
     }
 
-    const ownerId = req.user ? req.user._id : null;
-
     const newUser = await signup({
       email,
       password,
       subscription,
-      owner: ownerId,
     });
 
     res.status(201).json({
