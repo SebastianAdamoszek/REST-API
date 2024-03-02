@@ -3,10 +3,10 @@ const router = express.Router();
 const { userSchema } = require("../../validation/joi");
 const contactsModel = require("../../models/contactsModels");
 const Contacts = require("../../mongodb/contactsSchema");
-const verifiToken = require("../../middlewares/auth");
+const verifyToken = require("../../middlewares/auth");
 
 // GET /api/contacts
-router.get("/", verifiToken, async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -24,7 +24,7 @@ router.get("/", verifiToken, async (req, res) => {
 });
 
 // GET /api/contacts/:contactId
-router.get("/:contactId", verifiToken, async (req, res, next) => {
+router.get("/:contactId", verifyToken, async (req, res, next) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -42,7 +42,7 @@ router.get("/:contactId", verifiToken, async (req, res, next) => {
 });
 
 // PUT /api/contacts/:contactId
-router.put("/:contactId", verifiToken, async (req, res) => {
+router.put("/:contactId", verifyToken, async (req, res) => {
   const { name, email, phone, favorite } = req.body;
   const contactId = req.params.contactId;
   const ownerId = req.user._id;
@@ -76,7 +76,7 @@ router.put("/:contactId", verifiToken, async (req, res) => {
 });
 
 // POST /api/contacts
-router.post("/", verifiToken, async (req, res) => {
+router.post("/", verifyToken, async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -110,7 +110,7 @@ router.post("/", verifiToken, async (req, res) => {
 });
 
 // DELETE /api/contacts/:contactId
-router.delete("/:contactId", verifiToken, async (req, res) => {
+router.delete("/:contactId", verifyToken, async (req, res) => {
   try {
     const ownerId = req.user._id;
     const deletedContact = await contactsModel.removeContact(
@@ -126,7 +126,7 @@ router.delete("/:contactId", verifiToken, async (req, res) => {
   }
 });
 
-router.patch("/:contactId/favorite", verifiToken, async (req, res) => {
+router.patch("/:contactId/favorite", verifyToken, async (req, res) => {
   const { contactId } = req.params;
   const { favorite } = req.body;
 
