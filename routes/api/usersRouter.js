@@ -5,6 +5,10 @@ const router = express.Router();
 const { signup, login } = require("../../models/usersModels");
 const { signupAndLoginSchema } = require("../../validation/joi");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
+const jimp = require("jimp");
 require("dotenv").config();
 
 router.post("/signup", async (req, res, next) => {
@@ -103,4 +107,50 @@ router.get("/current", verifyToken, async (req, res, next) => {
     next(error);
   }
 });
+
+const upload = multer({
+  dest: path.join(__dirname, "../../tmp"),
+});
+
+router.patch(
+  "/avatars",
+  verifyToken,
+  upload.single("avatar"),
+  async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authorized" });
+      }
+
+      const avatar = req.file;
+      if (!avatar) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const image = await jimp.read(avatar.path);
+      await image.resize(250, 250);
+      await image.writeAsync(avatar.path);
+
+      const targetPath = path.join(
+        __dirname,
+        "../../public/avatars",
+        `${userId}${path.extname(avatar.originalname)}`
+      );
+      fs.renameSync(avatar.path, targetPath);
+
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { avatarURL: `/avatars/${path.basename(targetPath)}` },
+        { new: true }
+      );
+
+      res.status(200).json({ avatarURL: updatedUser.avatarURL });
+    } catch (error) {
+      console.error("Error updating user avatar:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
 module.exports = router;
