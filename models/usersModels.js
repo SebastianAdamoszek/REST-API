@@ -1,17 +1,29 @@
 const { User } = require("./schema/userSchema");
+const { sendVerifyEmail } = require("../middlewares/emailVerification");
+const { v4: uuidv4 } = require("uuid");
 
 const signup = async (userData, ownerId) => {
   try {
     const newUser = new User(userData);
+
     if (ownerId) {
-      // Sprawdź, czy ownerId nie jest nullem
-      newUser.owner = ownerId; // Ustaw ownerId jako wartość pola owner
+      newUser.owner = ownerId;
     }
-    newUser.setPassword(userData.password);
+
+    const verificationToken = uuidv4();
+    newUser.verificationToken = verificationToken;
+
+    await newUser.setPassword(userData.password);
     await newUser.save();
-    return newUser;
+
+    await sendVerifyEmail( newUser.email, verificationToken );
+
+    return {
+      email: newUser.email,
+      subscription: newUser.subscription,
+    };
   } catch (error) {
-    console.log("Adding user error:", error.message);
+    console.log("Error during signup:", error);
     throw error;
   }
 };

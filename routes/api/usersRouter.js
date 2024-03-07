@@ -1,15 +1,16 @@
 const express = require("express");
 const { User } = require("../../models/schema/userSchema");
-const verifyToken = require("../../middlewares/auth");
+const accessToken = require("../../middlewares/auth");
 const router = express.Router();
 const { signup, login } = require("../../models/usersModels");
-const { signupAndLoginSchema } = require("../../validation/joi");
+const { signupAndLoginSchema, emailSchema } = require("../../validation/joi");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const jimp = require("jimp");
 require("dotenv").config();
+const sendVerifyEmail = require("../../middlewares/emailVerification");
 
 router.post("/signup", async (req, res, next) => {
   try {
@@ -77,7 +78,7 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-router.get("/logout", verifyToken, async (req, res, next) => {
+router.get("/logout", accessToken, async (req, res, next) => {
   try {
     const { _id } = req.user;
     const user = await User.findById(_id);
@@ -92,7 +93,7 @@ router.get("/logout", verifyToken, async (req, res, next) => {
   }
 });
 
-router.get("/current", verifyToken, async (req, res, next) => {
+router.get("/current", accessToken, async (req, res, next) => {
   try {
     const currentUser = req.user;
     if (!currentUser) {
@@ -114,7 +115,7 @@ const upload = multer({
 
 router.patch(
   "/avatars",
-  verifyToken,
+  accessToken,
   upload.single("avatar"),
   async (req, res, next) => {
     try {
@@ -152,5 +153,51 @@ router.patch(
     }
   }
 );
+router.get("/verify/:verificationToken", async (req, res, next) => {
+  try {
+    const { verificationToken } = req.params;
+
+    const user = await User.findOne({ verificationToken });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    await User.findByIdAndUpdate(user._id, {
+      verificationToken: null,
+      verify: true,
+    });
+    return res.status(200).json({ message: "Verification successful" });
+  } catch (error) {
+    next(error);
+  }
+});
+router.post("/verify", async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const correctEmail = emailSchema.validate({ email });
+    if (correctEmail.error) {
+      return res
+        .status(400)
+        .json({ message: correctEmail.error.details[0].message });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "missing required field email" });
+    }
+    if (user.verify) {
+      return res
+        .status(400)
+        .json({ message: "Verification has already been passed" });
+    }
+    await sendVerifyEmail({
+      email,
+      verificationToken: user.verificationToken,
+    });
+
+    return res.status(200).json({ message: "Verification email sent" });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
