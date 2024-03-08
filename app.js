@@ -3,7 +3,7 @@ const logger = require("morgan");
 const cors = require("cors");
 const connectDB = require("./mongodb/connetion");
 const contactsRouter = require("./routes/api/contactsRouter");
-const usersRouter = require("./routes/api/usersRouter")
+const usersRouter = require("./routes/api/usersRouter");
 const app = express();
 const formatsLogger = app.get("env") === "development" ? "dev" : "short";
 

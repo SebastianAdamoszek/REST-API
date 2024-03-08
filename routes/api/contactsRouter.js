@@ -157,5 +157,4 @@ router.patch("/:contactId/favorite", verifyToken, async (req, res) => {
   }
 });
 
-
 module.exports = router;
