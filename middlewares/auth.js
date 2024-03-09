@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { User } = require("../models/schema/userSchema");
 require("dotenv").config();
 
-const verifyToken = async (req, res, next) => {
+const accessToken = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -12,7 +12,7 @@ const verifyToken = async (req, res, next) => {
 
     const token = authHeader.split(" ")[1];
 
-    const verify = jwt.verify(token, process.env.JWT_SECRET);
+    const verify = jwt.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET);
     const user = await User.findById(verify.id);
 
     if (!user || user.token !== token) {
@@ -28,4 +28,4 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
-module.exports = verifyToken;
+module.exports = accessToken;

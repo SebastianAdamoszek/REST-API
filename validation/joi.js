@@ -40,7 +40,14 @@ const signupAndLoginSchema = Joi.object({
   }),
 });
 
+const emailSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.email": "Invalid email format",
+  }),
+});
+
 module.exports = {
   userSchema,
   signupAndLoginSchema,
+  emailSchema,
 };
