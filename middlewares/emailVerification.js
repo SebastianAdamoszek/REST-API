@@ -5,9 +5,9 @@ async function sendVerifyEmail(email, verificationToken) {
   try {
     // Utwórz transporter
     const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
+      host: "smtp.poczta.onet.pl",
       port: 587,
-      secure: false, // Ustaw na true, jeśli używasz SSL
+      secure: false,
       auth: {
         user: process.env.EMAIL_USERNAME,
         pass: process.env.EMAIL_PASSWORD,
@@ -21,7 +21,8 @@ async function sendVerifyEmail(email, verificationToken) {
       to: process.env.EMAIL_USERNAME,
       subject: "Please verify your email address",
       html: `<h2>${email}</h2>
-        <p>Click here <a href="https://users/verify/${verificationToken}" target="_blank">here</a> to verify your email address.</p>
+        <p>Click <a href="https://users/verify/${verificationToken}" target="_blank">here</a> to verify your email address.</p>
+        <p>Copy the link <span style="color: red;">/users/verify/${verificationToken}</span>, Use the GET method in Postman to verify your email address.</p>
       `,
     };
 
